@@ -7,7 +7,6 @@ package frc.robot;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.RumbleSubsystem;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -22,7 +21,7 @@ public class RobotContainer {
    private final CommandXboxController m_driverController =
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
   // The robot's subsystems and commands are defined here...
-  private final RumbleSubsystem m_rumbleSubsystem = new RumbleSubsystem(m_driverController);
+  private final RumbleSubsystem m_rumbleSubsystem = new RumbleSubsystem(m_driverController, 10);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -40,26 +39,12 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
-    // Schedule `exampleMethodCommand` when the Xbox controller's B button is pressed,
-    // cancelling on release.
     m_driverController.b().whileTrue(Commands.runEnd(() -> {
       m_driverController.getHID().setRumble(RumbleType.kBothRumble, 1);
     }, () -> {
       m_driverController.getHID().setRumble(RumbleType.kBothRumble, 0);
     }));
 
-     m_driverController.a().whileTrue(
-      m_rumbleSubsystem.setRumbleCommand(RumbleType.kBothRumble, 0.5, 0.25));
-  }
-
-  /**
-   * Use this to pass the autonomous command to the main {@link Robot} class.
-   *
-   * @return the command to run in autonomous
-   */
-  public Command getAutonomousCommand() {
-    // An example command will be run in autonomous
-    return null;// Autos.exampleAuto(m_exampleSubsystem);
+     m_driverController.a().whileTrue(m_rumbleSubsystem.setRumbleCommand());
   }
 }

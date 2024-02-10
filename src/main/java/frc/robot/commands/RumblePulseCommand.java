@@ -15,21 +15,10 @@ public class RumblePulseCommand extends Command {
   private final RumbleSubsystem m_subsystem;
 
   private Timer m_timer;
-  private RumbleType m_rumbleType;
-  private double m_value;
-  private double m_timeBetweenPulses;
 
-  /**
-   * Creates a new ExampleCommand.
-   *
-   * @param subsystem The subsystem used by this command.
-   */
-  public RumblePulseCommand(RumbleType rumbleType, double value, double timeBetweenPulses, RumbleSubsystem subsystem) {
+  public RumblePulseCommand(RumbleSubsystem subsystem) {
     m_subsystem = subsystem;
     m_timer = new Timer();
-    this.m_rumbleType = rumbleType;
-    this.m_value = value;
-    this.m_timeBetweenPulses = timeBetweenPulses;
 
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(subsystem);
@@ -44,13 +33,17 @@ public class RumblePulseCommand extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    if (m_timer.hasElapsed(m_timeBetweenPulses)) {
-      if (m_subsystem.isRumbling(m_rumbleType)) {
-        // Stop rumbling, we want to stop the pulse that is currently running
-        m_subsystem.setRumble(this.m_rumbleType, 0);
+    if (m_timer.hasElapsed(this.m_subsystem.getTimeBetweenPulses())) {
+      if (m_subsystem.isRumbling(RumbleType.kLeftRumble)) {
+        m_subsystem.setRumble(RumbleType.kLeftRumble, 0);
       } else {
-        // Start rumbling, we want to start the pulse
-        m_subsystem.setRumble(this.m_rumbleType, this.m_value);
+        m_subsystem.setRumble(RumbleType.kLeftRumble, m_subsystem.getRumbleLeft());
+      }
+
+      if (m_subsystem.isRumbling(RumbleType.kRightRumble)) {
+        m_subsystem.setRumble(RumbleType.kRightRumble, 0);
+      } else {
+        m_subsystem.setRumble(RumbleType.kRightRumble, m_subsystem.getRumbleRight());
       }
       m_timer.reset();
     }
@@ -59,7 +52,7 @@ public class RumblePulseCommand extends Command {
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
-    m_subsystem.setRumble(this.m_rumbleType, 0);
+    m_subsystem.setRumble(RumbleType.kBothRumble, 0);
   }
 
   // Returns true when the command should end.

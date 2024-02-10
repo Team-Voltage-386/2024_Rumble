@@ -4,7 +4,12 @@
 
 package frc.robot.subsystems;
 
+import java.util.Map;
+
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -13,46 +18,50 @@ import frc.robot.commands.RumblePulseCommand;
 public class RumbleSubsystem extends SubsystemBase {
   /** Creates a new ExampleSubsystem. */
   private CommandXboxController m_controller;
-  private double m_rumbleRightLastSetValue;
-  private double m_rumbleLeftLastSetValue;
+  private GenericEntry m_rumbleRight;
+  private GenericEntry m_rumbleLeft;
+  private GenericEntry m_timeBetweenPulses;
+  private double m_rumbleRightLastSet;
+  private double m_rumbleLeftLastSet;
 
-  public RumbleSubsystem(CommandXboxController controller) {
+  public RumbleSubsystem(CommandXboxController controller, int maxTimeBetweenPulses) {
+    super("RumbleSubsystem");
     this.m_controller = controller;
-    m_rumbleRightLastSetValue = 0.0;
-    m_rumbleLeftLastSetValue = 0.0;
-
-  }
-
-  /**
-   * Example command factory method.
-   *
-   * @return a command
-   */
-  public Command exampleMethodCommand() {
-    // Inline construction of command goes here.
-    // Subsystem::RunOnce implicitly requires `this` subsystem.
-    return runOnce(
-        () -> {
-          /* one-time action goes here */
-        });
+    this.m_rumbleRight = Shuffleboard.getTab(this.getName())
+      .add("Rumble Right", 0.5)
+      .withWidget(BuiltInWidgets.kNumberSlider)
+      .withProperties(Map.of("min", 0, "max", 1))
+      .getEntry();
+    this.m_rumbleLeft = Shuffleboard.getTab(this.getName())
+      .add("Rumble Left", 0.5)
+      .withWidget(BuiltInWidgets.kNumberSlider)
+      .withProperties(Map.of("min", 0, "max", 1))
+      .getEntry();
+    this.m_timeBetweenPulses = Shuffleboard.getTab(this.getName())
+      .add("Time Between Pulses", 0.5)
+      .withWidget(BuiltInWidgets.kNumberSlider)
+      .withProperties(Map.of("min", 0, "max", maxTimeBetweenPulses))
+      .getEntry();
+    this.m_rumbleRightLastSet = 0.0;
+    this.m_rumbleLeftLastSet = 0.0;
   }
 
   public void setRumble(RumbleType type, double value) {
     m_controller.getHID().setRumble(type, value);
-    updateRumbleValues(type, value);
+    this.updateLastRumble(type, value);
   }
 
-  public void updateRumbleValues(RumbleType type, double value) {
+  public void updateLastRumble(RumbleType type, double value) {
     switch (type) {
       case kBothRumble:
-        m_rumbleRightLastSetValue = value;
-        m_rumbleLeftLastSetValue = value;
+        this.updateLastRumble(RumbleType.kLeftRumble, value);
+        this.updateLastRumble(RumbleType.kRightRumble, value);
         break;
       case kLeftRumble:
-        m_rumbleLeftLastSetValue = value;
+        this.m_rumbleLeftLastSet = value;
         break;
       case kRightRumble:
-        m_rumbleRightLastSetValue = value;
+        this.m_rumbleRightLastSet = value;
         break;
       default:
         assert(false);
@@ -60,8 +69,20 @@ public class RumbleSubsystem extends SubsystemBase {
     }
   }
 
-   public Command setRumbleCommand(RumbleType type, double value, double timeBetweenPulses) {
-      return new RumblePulseCommand(type, value, timeBetweenPulses, this);
+   public Command setRumbleCommand() {
+    return new RumblePulseCommand(this);
+   }
+
+   public double getRumbleLeft() {
+    return this.m_rumbleLeft.getDouble(0.5);
+   }
+
+   public double getRumbleRight() {
+    return this.m_rumbleRight.getDouble(0.5);
+   }
+
+   public double getTimeBetweenPulses() {
+    return this.m_timeBetweenPulses.getDouble(0.5);
    }
 
    public boolean isRumbling(RumbleType type) {
@@ -69,26 +90,15 @@ public class RumbleSubsystem extends SubsystemBase {
       case kBothRumble:
         return this.isRumbling(RumbleType.kLeftRumble) && this.isRumbling(RumbleType.kRightRumble);
       case kLeftRumble:
-        return m_rumbleLeftLastSetValue > 0.0;
+        return this.m_rumbleLeftLastSet > 0.0;
       case kRightRumble:
-        return m_rumbleRightLastSetValue > 0.0;
+        return this.m_rumbleRightLastSet > 0.0;
       default:
         assert(false);
         return false;
     }
    }
  
-
-  /**
-   * An example method querying a boolean state of the subsystem (for example, a digital sensor).
-   *
-   * @return value of some boolean subsystem state, such as a digital sensor.
-   */
-  public boolean exampleCondition() {
-    // Query some boolean state, such as a digital sensor.
-    return false;
-  }
-
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
